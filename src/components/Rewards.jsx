@@ -2,17 +2,17 @@ import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import './Rewards.css'; // We'll create this CSS file next
 
-// Import specific reward images based on the updated folder contents
-import appleLogo from './images/Apple-Logo.png'; // Keep as default/fallback
-//import amazonLogo from './images/amazon.png'; // Note: Case change from previous
-//import adidasLogo from './images/adidas.png';
-//import dellLogo from './images/dell.png';
-//import flipkartLogo from './images/flip.png'; // Assuming flip.png is Flipkart
-//import jblLogo from './images/jbl.png';
-//import nikeLogo from './images/nike.png';
-//import paytmLogo from './images/paytm.png';
-//import pumaLogo from './images/puma.png';
-//import skullcandyLogo from './images/skullcandy.png';
+// --- IMPORT IMAGES --- 
+// Ensure these files exist in src/components/images/
+import appleLogo from './images/Apple-Logo.png'; // Placeholder/fallback
+// Removed unused imports for now
+// import amazonLogo from './images/amazon.png'; // Assumed filename
+// import starbucksLogo from './images/starbucks.png'; // Assumed filename
+// import movieLogo from './images/movie.png'; // Assumed filename
+// import visaLogo from './images/visa.png'; // Assumed filename
+// import fitnessLogo from './images/fitness.png'; // Assumed filename
+// import earbudsLogo from './images/earbuds.png'; // Assumed filename
+// import bottleLogo from './images/bottle.png'; // Assumed filename
 
 // Placeholder logos (replace with actual image URLs or components later)
 // We don't need this array anymore if we use the same logo for all cards
@@ -21,19 +21,16 @@ import appleLogo from './images/Apple-Logo.png'; // Keep as default/fallback
 //   'Logo 7', 'Logo 8', 'Logo 9', 'Logo 10', 'Logo 11', 'Logo 12',
 // ];
 
-// Define sample reward data - UPDATED based on new images
+// Define sample reward data with specific logos - REVERTED to appleLogo
 const rewardsData = [
   { id: 1, name: '$5 Amazon Gift Card', points: 50, logo: appleLogo },
-  { id: 2, name: '$10 Flipkart Voucher', points: 100, logo: appleLogo },
-  { id: 3, name: '$10 Nike Discount', points: 120, logo: appleLogo },
-  { id: 4, name: '$10 Adidas Discount', points: 100, logo: appleLogo },
-  { id: 5, name: '$10 Puma Discount', points: 80, logo: appleLogo },
+  { id: 2, name: '$10 Starbucks Card', points: 100, logo: appleLogo },
+  { id: 3, name: 'Movie Ticket Voucher', points: 120, logo: appleLogo },
+  { id: 4, name: '$25 Visa Gift Card', points: 250, logo: appleLogo },
+  { id: 5, name: 'Premium Fitness App Subscription (1 Month)', points: 80, logo: appleLogo },
   { id: 6, name: '$50 Amazon Gift Card', points: 500, logo: appleLogo },
-  { id: 7, name: '$5 Paytm Cash', points: 50, logo: appleLogo },
-  { id: 8, name: '15% off Skullcandy', points: 150, logo: appleLogo},
-  { id: 9, name: '15% off JBL', points: 150, logo: appleLogo },
-  { id: 10, name: '$20 Dell Coupon', points: 200, logo: appleLogo },
-  // Add more rewards or use appleLogo as placeholder if needed
+  { id: 7, name: 'Wireless Earbuds', points: 1000, logo: appleLogo },
+  { id: 8, name: 'Smart Water Bottle', points: 750, logo: appleLogo },
 ];
 
 // Let's assume we want 12 cards for now - REMOVED, using rewardsData length now
@@ -59,7 +56,7 @@ export default function Rewards() {
           const canRedeem = rewardPoints >= reward.points;
           return (
             <div key={reward.id} className={`reward-item ${!canRedeem ? 'disabled' : ''}`}>
-            <div className="logo-placeholder">
+              <div className="logo-placeholder">
                 {/* Use the logo from reward data */}
                 <img src={reward.logo} alt={`${reward.name} Logo`} />
               </div>
