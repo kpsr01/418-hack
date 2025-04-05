@@ -1,7 +1,6 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-// Removed AppContext import as setScanResult is no longer used directly here
-// import { AppContext } from "../context/AppContext";
+import './scanner.css';
 
 export default function Scanner() {
   // Removed setScanResult from context usage
@@ -422,20 +421,20 @@ ${formatSnackData(alternativeDetails)}
       if (!snack) return null;
       const { product_name, image_url, nutriments = {}, ingredients_text } = snack;
       return (
-          <div style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '500px', margin: '1rem auto', textAlign: 'left', background: '#f9f9f9' }}>
-              <h3>{title}: {product_name || "Name not found"}</h3>
+          <div className="" style={{ marginTop: "1rem", padding: "1rem",borderRadius: "15px", maxWidth: '510px', marginRight: '10px', textAlign: 'center', background: '#f9f9f9' , padding: '10px', color: '#000000', backgroundColor: '#cccfcd'}}>
+              <h3 style={{ fontFamily: 'Urbanist, sans-serif' }}>{product_name || "Name not found"}</h3>
               {image_url && (
                   <img
                       src={image_url}
                       alt={product_name || 'Snack image'}
-                      style={{ maxWidth: "150px", height: "auto", marginBottom: "1rem", display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+                      style={{ maxWidth: "150px", height: "auto", marginBottom: "1rem", display: 'block', marginLeft: 'auto', marginRight: 'auto', borderRadius: '10px' }}
                   />
               )}
-              <p><strong>Calories:</strong> {nutriments['energy-kcal_100g'] !== undefined ? `${nutriments['energy-kcal_100g']} kcal / 100g` : 'N/A'}</p>
-              <p><strong>Sugars:</strong> {nutriments.sugars_100g !== undefined ? `${nutriments.sugars_100g} g / 100g` : 'N/A'}</p>
-              <p><strong>Fat:</strong> {nutriments.fat_100g !== undefined ? `${nutriments.fat_100g} g / 100g` : 'N/A'}</p>
-              <p><strong>Sodium:</strong> {nutriments.sodium_100g !== undefined ? `${(nutriments.sodium_100g * 1000).toFixed(0)} mg / 100g` : 'N/A'}</p>
-              <p><strong>Ingredients:</strong> {ingredients_text || "Ingredients not listed"}</p>
+              <p style={{ color: 'black' }}><strong>Calories:</strong> {nutriments['energy-kcal_100g'] !== undefined ? `${nutriments['energy-kcal_100g']} kcal / 100g` : 'N/A'}</p>
+              <p style={{ color: 'black' }}><strong>Sugars:</strong> {nutriments.sugars_100g !== undefined ? `${nutriments.sugars_100g} g / 100g` : 'N/A'}</p>
+              <p style={{ color: 'black' }}><strong>Fat:</strong> {nutriments.fat_100g !== undefined ? `${nutriments.fat_100g} g / 100g` : 'N/A'}</p>
+              <p style={{ color: 'black' }}><strong>Sodium:</strong> {nutriments.sodium_100g !== undefined ? `${(nutriments.sodium_100g * 1000).toFixed(0)} mg / 100g` : 'N/A'}</p>
+              <p style={{ color: 'black' }}><strong>Ingredients:</strong> {ingredients_text || "Ingredients not listed"}</p>
           </div>
       );
   };
@@ -468,7 +467,7 @@ ${formatSnackData(alternativeDetails)}
       )}
       {/* Show Scan Alternative button only after initial suggestions are loaded */}
       {!scanning && scanStage === 'initialScanned' && initialSnackDetails && (
-        <button onClick={() => startScanner('alternative')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#4CAF50', color: 'white' }}>
+        <button onClick={() => startScanner('alternative')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#59cf5e', color: 'white' }}>
           Scan Healthier Alternative
         </button>
       )}
@@ -478,6 +477,12 @@ ${formatSnackData(alternativeDetails)}
             Start New Comparison
          </button>
        )}
+       {/* Add Stop Scan button when scanning is active */}
+       {scanning && (
+          <button onClick={stopScanner} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#ff9800', color: 'white' }}>
+             Stop Scan
+          </button>
+        )}
 
 
        {/* --- Scanner UI --- */}
@@ -506,22 +511,24 @@ ${formatSnackData(alternativeDetails)}
       {error && <p style={{ color: "red", marginTop: '1rem', fontWeight: 'bold' }}>Error: {error}</p>}
 
 
-      {/* --- Initial Snack Display Area --- */}
-      <SnackDisplay snack={initialSnackDetails} title="Initial Snack" />
+      {/* --- Snack Display Area (Flex Container) --- */}
+      <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', marginTop: '1rem' }}>
+        {/* Initial Snack Display */}
+        {initialSnackDetails && <SnackDisplay snack={initialSnackDetails} title="Initial Snack" />}
+
+        {/* Alternative Snack Display (conditionally rendered) */}
+        {alternativeSnackDetails && (scanStage === 'alternative' || scanStage === 'comparing' || scanStage === 'compared') && (
+            <SnackDisplay snack={alternativeSnackDetails} title="Alternative Snack" />
+        )}
+      </div>
 
       {/* --- Initial Suggestions Area --- */}
-      {llmInitialSuggestions && !isSuggesting && (scanStage === 'initialScanned' || scanStage === 'alternative' || scanStage === 'comparing' || scanStage === 'compared') && (
+      {llmInitialSuggestions && !isSuggesting && (scanStage === 'initialScanned' || scanStage === 'alternative' || scanStage === 'comparing') && (
           <div style={{ marginTop: "1.5rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '700px', margin: '1.5rem auto', textAlign: 'left', backgroundColor: '#f0f8ff' }}>
               <h4 style={{textAlign: 'center', marginBottom: '1rem'}}>Suggested Alternatives:</h4>
               <div dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmInitialSuggestions) }} />
           </div>
       )}
-
-      {/* --- Alternative Snack Display Area (only shown after alternative scan starts) --- */}
-      {(scanStage === 'alternative' || scanStage === 'comparing' || scanStage === 'compared') && (
-          <SnackDisplay snack={alternativeSnackDetails} title="Alternative Snack" />
-      )}
-
 
       {/* --- LLM Comparison Result --- */}
       {llmComparison && !isComparing && scanStage === 'compared' && (
