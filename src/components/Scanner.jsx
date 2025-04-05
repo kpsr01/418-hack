@@ -422,7 +422,7 @@ ${formatSnackData(alternativeDetails)}
       if (!snack) return null;
       const { product_name, image_url, nutriments = {}, ingredients_text } = snack;
       return (
-          <div className="" style={{ marginTop: "1rem", padding: "1rem",borderRadius: "15px", maxWidth: '510px', marginRight: '10px', textAlign: 'center', background: '#f9f9f9' , padding: '10px', color: '#000000', backgroundColor: '#cccfcd'}}>
+          <div style={{ marginTop: "1rem", padding: "1rem",borderRadius: "15px", maxWidth: '560px', marginRight: '10px', textAlign: 'center', background: '#f9f9f9' , color: '#000000', backgroundColor: '#cccfcd'}}>
               <h3 style={{ fontFamily: 'Urbanist, sans-serif' }}>{product_name || "Name not found"}</h3>
               {image_url && (
                   <img
