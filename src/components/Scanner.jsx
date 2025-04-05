@@ -508,20 +508,71 @@ ${formatSnackData(alternativeDetails)}
       {/* --- Control Buttons --- */}
       {!scanning && scanStage === 'initial' && (
         <button onClick={() => startScanner('initial')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem' }}>
-          Scan Initial Snack
+          Scan Snack
         </button>
       )}
       {/* Show Scan Alternative button only after initial suggestions are loaded */}
       {!scanning && scanStage === 'initialScanned' && initialSnackDetails && (
-        <button onClick={() => startScanner('alternative')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#59cf5e', color: 'white' }}>
-          Scan Healthier Alternative
-        </button>
+      <button
+      onClick={() => startScanner('alternative')}
+      style={{
+        padding: "0.8rem 1.5rem",
+        marginBottom: '1rem',
+        fontSize: '1rem',
+        backgroundColor: '#2f7a45',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = '#ffffff';
+        e.target.style.color = '#2f7a45';
+        e.target.style.border = '1px solid #2f7a45';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.backgroundColor = '#2f7a45';
+        e.target.style.color = 'white';
+        e.target.style.border = 'none';
+      }}
+    >
+      Scan Healthier Alternative
+    </button>
+    
+      
+      
       )}
        {/* Show Start Over button after comparison or if stuck */}
        {!scanning && (scanStage === 'compared' || scanStage === 'initialScanned' || scanStage === 'alternative') && (
-         <button onClick={resetFlow} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', marginLeft: '1rem', fontSize: '1rem', backgroundColor: '#f44336', color: 'white' }}>
-            Start New Comparison
-         </button>
+        <button
+        onClick={resetFlow}
+        style={{
+          padding: "0.8rem 1.5rem",
+          marginBottom: '1rem',
+          marginLeft: '1rem',
+          fontSize: '1rem',
+          backgroundColor: '#f5f2eb',
+          color: '#2f7a45',
+          border: '1px solid #2f7a45',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = '#2f7a45';
+          e.target.style.color = '#ffffff';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = '#f5f2eb';
+          e.target.style.color = '#2f7a45';
+        }}
+      >
+        Start New Comparison
+      </button>
+      
+      
+      
        )}
        {/* Add Stop Scan button when scanning is active */}
        {scanning && (
