@@ -203,9 +203,32 @@ Analysis and Alternatives:`;
   return (
     <div style={{ textAlign: "center", marginTop: "2rem" }}>
       {!scanning && !productDetails && (
-        <button onClick={startScanner} style={{ padding: "0.5rem 1rem", marginBottom: '1rem' }}>
-          Start Barcode Scan
-        </button>
+        <button
+        onClick={startScanner}
+        style={{
+          padding: "0.75rem 1.5rem",
+          backgroundColor: "#000",
+          color: "#fff",
+          border: "1px solid #000",
+          borderRadius: "999px",
+          fontSize: "1rem",
+          fontWeight: "500",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          marginBottom: "1rem",
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = "#fff";
+          e.target.style.color = "#000";
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = "#000";
+          e.target.style.color = "#fff";
+        }}
+      >
+        Start Scan
+      </button>
+      
       )}
 
        <div

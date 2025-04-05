@@ -1,10 +1,14 @@
-// src/components/Landing.jsx
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './Landing.css';
+
 export default function Landing() {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Swap the Sweet. Stay Elite.</h1>
-        <p>Scan your snack. Get healthier alternatives. Earn rewards.</p>
-      </div>
+        <div className="landing-section d-flex flex-column justify-content-center align-items-center text-white">
+            <h1 className="display-4 font-weight-bold">Swap the Sweet.<br/></h1>
+            <h2 className="display-4 font-weight-bold">Stay Elite.</h2>
+            <p className="lead">Scan your snack. Get healthier alternatives. Earn rewards.</p>
+            
+
+        </div>
     );
-  }
-  
+}

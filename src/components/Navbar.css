@@ -1,0 +1,49 @@
+.custom-navbar {
+    background: rgba(15, 12, 41, 0.9); 
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+
+.glow-text {
+    font-weight: bold;
+    font-size: 1.8rem;
+    background: linear-gradient(to right, #00ffe0, #52a1f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+}
+
+
+.glow-link {
+    color: #dcdcdc;
+    font-weight: 500;
+    margin-left: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.glow-link:hover {
+    color: #00ffe0;
+    text-shadow: 0 0 8px #00ffe0;
+}
+
+
+.glow-link::after {
+    content: '';
+    display: block;
+    height: 2px;
+    width: 0%;
+    background-color: #00ffe0;
+    transition: width 0.3s ease;
+    margin-top: 4px;
+}
+
+.glow-link:hover::after {
+    width: 100%;
+}
