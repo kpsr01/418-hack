@@ -1,0 +1,52 @@
+.contact-container {
+  padding: 4rem 2rem; /* Increased padding for spacing */
+  text-align: center;
+  /* Same background as rewards */
+  background: linear-gradient(90deg, #000000, #787786, #2b2b2c);
+  min-height: 100vh; /* Ensure it takes full viewport height */
+  color: white; /* Default text color for contrast */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Center content vertically */
+}
+
+.contact-container h2 {
+  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+}
+
+.contact-container p {
+  font-size: 1.2rem;
+  color: #ccc;
+  max-width: 500px;
+  margin-bottom: 1rem;
+}
+
+.contact-details {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  background-color: rgba(255, 255, 255, 0.1); /* Slight background for details */
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: inline-block; /* Fit content size */
+}
+
+.contact-details p {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #eee;
+  text-align: left;
+}
+
+.contact-details strong {
+  color: white;
+  margin-right: 0.5rem;
+}
+
+/* Reuse coming soon style from Rewards.css if needed */
+.coming-soon-text {
+  font-size: 1.1rem;
+  color: #bbb;
+  margin-top: 2rem;
+} 

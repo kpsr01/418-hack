@@ -1,0 +1,61 @@
+.rewards-container {
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(90deg, #000000, #787786, #2b2b2c);
+  min-height: 100vh;
+  color: white;
+}
+
+.coming-soon-text {
+  font-size: 1.5rem;
+  color: #cccccc;
+  margin-bottom: 2rem;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto; /* Center the grid */
+}
+
+.reward-item {
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px; /* Ensure items have some height */
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add transition for smooth effect */
+  cursor: pointer; /* Indicate items are interactive (optional) */
+}
+
+/* Add hover effect */
+.reward-item:hover {
+  transform: scale(1.05); /* Scale up slightly */
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4); /* Add a shadow for depth */
+}
+
+.logo-placeholder {
+  margin-bottom: 0.5rem;
+  width: 80px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-placeholder img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.reward-item p {
+  font-size: 0.9rem;
+  color: #ccc;
+} 
