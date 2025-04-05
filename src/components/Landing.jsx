@@ -1,5 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Landing.css';
+import Scanner from '../components/Scanner'; // adjust path as needed
 
 export default function Landing() {
     return (
@@ -7,8 +8,10 @@ export default function Landing() {
             <h1 className="display-4 font-weight-bold">Swap the Sweet.<br/></h1>
             <h2 className="display-4 font-weight-bold">Stay Elite.</h2>
             <p className="lead">Scan your snack. Get healthier alternatives. Earn rewards.</p>
-            
 
+            <div style={{ marginTop: '2rem' }}>
+                <Scanner />
+            </div>
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { AppContext } from "../context/AppContext";
+import ScanButton from "./ScanButton";
 
 export default function Scanner() {
   const { setScanResult } = useContext(AppContext);
@@ -200,35 +201,58 @@ Analysis and Alternatives:`;
     return text.split('\\n').join('<br />');
   };
 
+  const stopScanner = () => {
+    if (html5QrCodeRef.current && typeof html5QrCodeRef.current.stop === 'function') {
+      html5QrCodeRef.current.stop()
+        .then(() => {
+          console.log("Scanner stopped manually by user.");
+          setScanning(false);
+        })
+        .catch(err => {
+          console.error("Error stopping scanner manually:", err);
+          setError("Failed to stop scanner.");
+          setScanning(false);
+        });
+    } else {
+      console.log("Scanner instance not found or cannot be stopped.");
+      setScanning(false);
+    }
+  };
+
   return (
     <div style={{ textAlign: "center", marginTop: "2rem" }}>
-      {!scanning && !productDetails && (
+      <ScanButton 
+        onClick={startScanner} 
+        isScanning={scanning} 
+        hasProductDetails={!!productDetails} 
+      />
+
+      {scanning && (
         <button
-        onClick={startScanner}
-        style={{
-          padding: "0.75rem 1.5rem",
-          backgroundColor: "#000",
-          color: "#fff",
-          border: "1px solid #000",
-          borderRadius: "999px",
-          fontSize: "1rem",
-          fontWeight: "500",
-          cursor: "pointer",
-          transition: "all 0.3s ease",
-          marginBottom: "1rem",
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = "#fff";
-          e.target.style.color = "#000";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = "#000";
-          e.target.style.color = "#fff";
-        }}
-      >
-        Start Scan
-      </button>
-      
+          onClick={stopScanner}
+          style={{
+            padding: "0.75rem 1.5rem",
+            backgroundColor: "#dc3545",
+            color: "#fff",
+            border: "1px solid #dc3545",
+            borderRadius: "999px",
+            fontSize: "1rem",
+            fontWeight: "500",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            marginBottom: "1rem",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = "#c82333";
+            e.target.style.borderColor = "#bd2130";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = "#dc3545";
+            e.target.style.borderColor = "#dc3545";
+          }}
+        >
+          Stop Scan
+        </button>
       )}
 
        <div
