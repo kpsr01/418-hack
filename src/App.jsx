@@ -9,7 +9,6 @@ function App() {
     <div>
       <Navbar />
       <Landing />
-      <Scanner />
       <SnackResult />
     </div>
   );

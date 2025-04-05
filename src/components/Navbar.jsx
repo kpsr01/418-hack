@@ -20,7 +20,7 @@ export default function Navbar() {
 
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav">
-            {['Home', 'Scanner', 'Rewards', 'Contact'].map((item, index) => (
+            {['Home', 'Rewards', 'Contact'].map((item, index) => (
               <li className="nav-item" key={index}>
                 <a className="nav-link glow-link" href={`/${item.toLowerCase()}`}>
                   {item}
