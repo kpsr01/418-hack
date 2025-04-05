@@ -524,18 +524,89 @@ ${formatSnackData(alternativeDetails)}
 
       {/* --- Initial Suggestions Area --- */}
       {llmInitialSuggestions && !isSuggesting && (scanStage === 'initialScanned' || scanStage === 'alternative' || scanStage === 'comparing') && (
-          <div style={{ marginTop: "1.5rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '700px', margin: '1.5rem auto', textAlign: 'left', backgroundColor: '#f0f8ff' }}>
-              <h4 style={{textAlign: 'center', marginBottom: '1rem'}}>Suggested Alternatives:</h4>
-              <div dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmInitialSuggestions) }} />
+          <div style={{
+            margin: '2rem auto',
+            padding: '1.5rem',
+            borderRadius: '0.75rem',
+            maxWidth: '700px',
+            backgroundColor: '#f9fafb',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+            color: '#111827',
+            fontFamily: 'sans-serif',
+          }}>
+            <h4 style={{
+              textAlign: 'center',
+              marginBottom: '1.25rem',
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1f2937'
+            }}>
+              Suggested Alternatives
+            </h4>
+          
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}>
+              {formatLlmResponse(llmInitialSuggestions).split('<br>').map((item, index) => (
+                <div key={index} style={{
+                  backgroundColor: '#ffffff',
+                  borderLeft: '4px solid #3b82f6',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  lineHeight: '1.5',
+                  fontSize: '0.95rem',
+                }} dangerouslySetInnerHTML={{ __html: item.trim() }} />
+              ))}
+            </div>
           </div>
+          
+          
       )}
 
       {/* --- LLM Comparison Result --- */}
       {llmComparison && !isComparing && scanStage === 'compared' && (
-        <div style={{ marginTop: "2rem", padding: "1.5rem", border: "1px solid #ddd", borderRadius: "8px", maxWidth: '700px', margin: '2rem auto', textAlign: 'left', backgroundColor: '#fff' }}>
-          <h3 style={{textAlign: 'center', marginBottom: '1rem'}}>Comparison Result</h3>
-           <div dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmComparison) }} />
+        <div style={{
+          margin: '2rem auto',
+          padding: '1.5rem',
+          border: '1px solid #e5e7eb',
+          borderRadius: '0.75rem',
+          maxWidth: '700px',
+          backgroundColor: '#f9fafb',
+          color: '#111827',
+          fontFamily: 'sans-serif',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+        }}>
+          <h3 style={{
+            textAlign: 'center',
+            marginBottom: '1.25rem',
+            fontSize: '1.25rem',
+            fontWeight: '600',
+            color: '#1f2937'
+          }}>
+            Comparison Result
+          </h3>
+        
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            lineHeight: '1.6',
+            fontSize: '0.95rem',
+          }}>
+            {formatLlmResponse(llmComparison).split('<br>').map((chunk, index) => (
+              <div key={index} style={{
+                backgroundColor: '#ffffff',
+                borderLeft: '4px solid #10b981', // a nice emerald/green vibe for comparisons
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+              }} dangerouslySetInnerHTML={{ __html: chunk.trim() }} />
+            ))}
+          </div>
         </div>
+        
       )}
 
     </div>
