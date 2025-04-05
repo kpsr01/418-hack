@@ -1,9 +1,10 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+import { AppContext } from "../context/AppContext";
 import './scanner.css';
 
 export default function Scanner() {
-  // Removed setScanResult from context usage
+  const { addPoints } = useContext(AppContext);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState(null);
   // State for the two snacks
@@ -18,9 +19,11 @@ export default function Scanner() {
   const [llmInitialSuggestions, setLlmInitialSuggestions] = useState(null); // State for initial suggestions
   const [isComparing, setIsComparing] = useState(false); // Loading state for comparison
   const [llmComparison, setLlmComparison] = useState(null); // State for comparison result
+  const [modalInfo, setModalInfo] = useState({ visible: false, points: 0 }); // State for the points modal
 
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const modalTimeoutRef = useRef(null); // Ref to manage modal timeout
   // State to manage the scanning flow
   const [scanStage, setScanStage] = useState('initial'); // 'initial', 'suggesting', 'initialScanned', 'alternative', 'comparing', 'compared'
 
@@ -143,21 +146,19 @@ ${formatSnackData(initialDetails)}`;
 You will be provided with the nutritional values (e.g., calories, sugar, fat, sodium) and ingredients of two products: the initial product and a proposed alternative. The user's location is the United States of America.
 
 Your tasks are:
-
 1. Analyze and compare the nutritional values and ingredients of both products.
-2. Assign a healthiness score to each product on a scale from 1 to 10, where 1 represents the least healthy and 10 represents the healthiest option.
-3. Provide a brief explanation for each score, highlighting key factors influencing the healthiness assessment.
+2. Determine which product is healthier, taking into account both:
+   - How good it is for health in general (consider improved nutritional metrics such as lower sugar, fewer calories, reduced saturated fat, and less processed ingredients).
+   - How it compares to the initial product.
+   - Give more weightage to how good it is for health in general
+   Compute a health score for each product on a scale from 1 to 10.
+3. Assess the relevance of the proposed alternative to the initial product (e.g., similarity in product type and suitability for user preferences) on a scale from 1 to 10.
+4. Compute a final composite score for the proposed alternative using a weight of 0.8 for the health score and 0.2 for the relevance score. (Final Points = (Health Score * 0.8) + (Relevance Score * 0.2))
+5. Output only the following (do not include any additional text):
 
-Return your answer in the following structured format:
-
-- **Initial Product:**
-  - **Healthiness Score:** [Numeric score between 1 and 10]
-  - **Rationale:** [Brief explanation for the score]
-
-- **Proposed Alternative:**
-  - **Healthiness Score:** [Numeric score between 1 and 10]
-  - **Rationale:** [Brief explanation for the score]
-
+- **Healthier Product:** [Name]
+- **Final Points:** [Score]
+  
 --- DATA ---
 Initial Product Details:
 ${formatSnackData(initialDetails)}
@@ -455,6 +456,51 @@ ${formatSnackData(alternativeDetails)}
       setCurrentLoadingSnack(null);
   };
 
+  // useEffect to parse LLM comparison and show points alert
+  useEffect(() => {
+    if (scanStage === 'compared' && llmComparison) {
+      console.log("Attempting to parse LLM comparison for points:", llmComparison);
+      // Regex to find 'Final Points:' with optional leading characters/markdown and case-insensitivity
+      const pointsRegex = /-?\s*\*?\*?Final Points:\*?\*?\s*(\d+(\.\d+)?)/i;
+      const match = llmComparison.match(pointsRegex);
+
+      if (match && match[1]) {
+        const score = parseFloat(match[1]);
+        if (!isNaN(score)) {
+          console.log(`Extracted score: ${score}`);
+          
+          // Clear any existing timeout before setting a new one
+          if (modalTimeoutRef.current) {
+            clearTimeout(modalTimeoutRef.current);
+          }
+          
+          // Show the modal with the score
+          setModalInfo({ visible: true, points: score });
+          addPoints(score);
+
+          // Set a timeout to hide the modal after 4 seconds
+          modalTimeoutRef.current = setTimeout(() => {
+            setModalInfo({ visible: false, points: 0 });
+            modalTimeoutRef.current = null; // Clear the ref
+          }, 4000);
+
+        } else {
+          console.error("Failed to parse extracted score as a number:", match[1]);
+        }
+      } else {
+        console.warn("Could not find 'Final Points:' in the LLM comparison string or format is unexpected.");
+      }
+    }
+  }, [llmComparison, scanStage]); // Depend on llmComparison and scanStage
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (modalTimeoutRef.current) {
+        clearTimeout(modalTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div style={{ textAlign: "center", marginTop: "2rem", paddingBottom: "3rem" }}>
@@ -501,7 +547,7 @@ ${formatSnackData(alternativeDetails)}
            overflow: 'hidden'
          }}
        >
-         {scanning && <p style={{position: 'absolute', top: '5px', left: '5px', color: '#555', fontSize: '0.8em'}}>Scanning for {scanStage} snack...</p>}
+         {scanning && <p style={{position: 'absolute', top: '5px', left: '5px', color: '#555', fontSize: '1em'}}>Scanning for {scanStage} snack...</p>}
        </div>
 
       {/* --- Status Messages --- */}
@@ -607,6 +653,29 @@ ${formatSnackData(alternativeDetails)}
           </div>
         </div>
         
+      )}
+
+      {/* --- Points Earned Modal --- */}
+      {modalInfo.visible && (
+        <div style={{
+          position: 'fixed', // Position relative to the viewport
+          top: '20px',       // Position from the top
+          left: '50%',      // Center horizontally
+          transform: 'translateX(-50%)', // Adjust for centering
+          backgroundColor: 'rgba(40, 40, 40, 0.9)', // Semi-transparent dark background
+          color: '#66ff66',  // Bright green text
+          padding: '10px 20px', // Make padding smaller
+          borderRadius: '20px', // Make borders more rounded
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', // Subtle shadow
+          zIndex: 1000,       // Ensure it's on top
+          fontSize: '0.8em',   // Make font slightly smaller
+          fontWeight: 'bold',
+          fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', // Modern font
+          transition: 'opacity 0.5s ease-out', // Smooth fade out (though we hide abruptly)
+          textAlign: 'center'
+        }}>
+          {modalInfo.points.toFixed(1)} Points Added!
+        </div>
       )}
 
     </div>
