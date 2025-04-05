@@ -1,44 +1,88 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { AppContext } from "../context/AppContext";
-import ScanButton from "./ScanButton";
+// Removed AppContext import as setScanResult is no longer used directly here
+// import { AppContext } from "../context/AppContext";
 
 export default function Scanner() {
-  const { setScanResult } = useContext(AppContext);
+  // Removed setScanResult from context usage
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState(null);
-  const [productDetails, setProductDetails] = useState(null);
+  // State for the two snacks
+  const [initialSnackDetails, setInitialSnackDetails] = useState(null);
+  const [alternativeSnackDetails, setAlternativeSnackDetails] = useState(null);
+  // Renamed productDetails state
+  const [currentLoadingSnack, setCurrentLoadingSnack] = useState(null); // 'initial' or 'alternative'
   const [isLoading, setIsLoading] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [llmAnalysis, setLlmAnalysis] = useState(null);
+
+  // LLM States
+  const [isSuggesting, setIsSuggesting] = useState(false); // Loading state for initial suggestions
+  const [llmInitialSuggestions, setLlmInitialSuggestions] = useState(null); // State for initial suggestions
+  const [isComparing, setIsComparing] = useState(false); // Loading state for comparison
+  const [llmComparison, setLlmComparison] = useState(null); // State for comparison result
+
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  // State to manage the scanning flow
+  const [scanStage, setScanStage] = useState('initial'); // 'initial', 'suggesting', 'initialScanned', 'alternative', 'comparing', 'compared'
 
   const VITE_OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
-  const getLlmAnalysis = async (details) => {
-    if (!VITE_OPENROUTER_API_KEY) {
-      setError("OpenRouter API key is not configured in .env file (VITE_OPENROUTER_API_KEY).");
-      return;
-    }
-    if (!details) return;
-
-    setIsAnalyzing(true);
-    setLlmAnalysis(null);
-    setError(null);
-
-    const { name, nutriments, ingredients } = details;
-    const prompt = `Analyze the following snack food based on its nutritional information and ingredients. Provide a brief healthiness summary (1-2 sentences) and suggest 1-2 specific, healthier alternatives available in typical grocery stores. Focus on lower sugar and processed ingredients.
-
-Snack Name: ${name}
+  const formatSnackData = (details) => {
+    if (!details) return "N/A";
+    const { name, product_name, nutriments = {}, ingredients_text } = details; // Added product_name for flexibility
+    return `
+Snack Name: ${product_name || name || "N/A"}
 Calories (per 100g): ${nutriments['energy-kcal_100g'] || 'N/A'}
 Sugars (per 100g): ${nutriments.sugars_100g || 'N/A'}
 Fat (per 100g): ${nutriments.fat_100g || 'N/A'}
-Ingredients: ${ingredients}
+Sodium (per 100g): ${nutriments.sodium_100g || 'N/A'}
+Ingredients: ${ingredients_text || "Ingredients not listed"}
+    `.trim();
+  };
 
-Analysis and Alternatives:`;
+  // New function for initial LLM suggestions
+  const getLlmInitialSuggestions = async (initialDetails) => {
+    if (!VITE_OPENROUTER_API_KEY) {
+      setError("OpenRouter API key is not configured.");
+      setScanStage('initial'); // Revert stage
+      return;
+    }
+    if (!initialDetails) return;
 
-    console.log("Sending prompt to LLM:", prompt);
+    setIsSuggesting(true);
+    setLlmInitialSuggestions(null);
+    setError(null);
+    setScanStage('suggesting');
+
+    const systemPrompt = `You are a health assistant in a health tracking application that suggests healthier food alternatives.
+You will be provided with the nutritional values (e.g., calories, sugar, fat) and ingredients of a product. The location of the user is the United States of America.
+
+Your tasks are:
+1. Analyze the provided nutritional values and ingredients.
+2. Suggest three healthier alternatives that:
+   - Have improved nutritional metrics (e.g., lower sugar, fewer calories, reduced saturated fat, less processed ingredients).
+   - Are generally available in grocery stores within the United States.
+3. Return your answer ONLY in the following structured format:
+
+   - **Alternative 1:**
+     - **Product Name:** [Name of the first alternative]
+     - **Nutritional Benefits:** [E.g., '30% less sugar, 15% fewer calories']
+     - **Price Difference:** [E.g., 'Similar price range', 'Slightly more expensive', 'Less expensive']
+
+   - **Alternative 2:**
+     - **Product Name:** [Name of the second alternative]
+     - **Nutritional Benefits:** [E.g., '25% less saturated fat, 10% fewer calories']
+     - **Price Difference:** [E.g., 'Similar price range', 'Slightly more expensive', 'Less expensive']
+
+   - **Alternative 3:**
+     - **Product Name:** [Name of the third alternative]
+     - **Nutritional Benefits:** [E.g., '20% less sugar, 5% more fiber']
+     - **Price Difference:** [E.g., 'Similar price range', 'Slightly more expensive', 'Less expensive']`;
+
+    const userPrompt = `Here is the product data:
+${formatSnackData(initialDetails)}`;
+
+    console.log("Sending suggestions prompt to LLM:", userPrompt);
 
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -49,6 +93,91 @@ Analysis and Alternatives:`;
         },
         body: JSON.stringify({
           "model": "meta-llama/llama-3.1-70b-instruct:free",
+          "messages": [
+            { "role": "system", "content": systemPrompt },
+            { "role": "user", "content": userPrompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`LLM API error! status: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      console.log("LLM Suggestions Response:", data);
+
+      if (data.choices && data.choices.length > 0) {
+        setLlmInitialSuggestions(data.choices[0].message.content);
+        setScanStage('initialScanned'); // Move to next stage after getting suggestions
+      } else {
+        throw new Error("No suggestions received from LLM.");
+      }
+
+    } catch (llmError) {
+      console.error("Failed to get LLM suggestions:", llmError);
+      setError(`Failed to get suggestions: ${llmError.message}`);
+      setLlmInitialSuggestions(null);
+      setScanStage('initial'); // Revert to initial stage on suggestion error
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+
+  // New function for LLM comparison (remains largely the same)
+  const getLlmComparison = async (initialDetails, alternativeDetails) => {
+    if (!VITE_OPENROUTER_API_KEY) {
+      setError("OpenRouter API key is not configured in .env file (VITE_OPENROUTER_API_KEY).");
+      return;
+    }
+    if (!initialDetails || !alternativeDetails) return;
+
+    setIsComparing(true);
+    setLlmComparison(null);
+    setError(null);
+    setScanStage('comparing'); // Indicate comparison is in progress
+
+    const prompt = `You are a health assistant in a health tracking application tasked with evaluating and comparing food products.
+
+You will be provided with the nutritional values (e.g., calories, sugar, fat, sodium) and ingredients of two products: the initial product and a proposed alternative. The user's location is the United States of America.
+
+Your tasks are:
+
+1. Analyze and compare the nutritional values and ingredients of both products.
+2. Assign a healthiness score to each product on a scale from 1 to 10, where 1 represents the least healthy and 10 represents the healthiest option.
+3. Provide a brief explanation for each score, highlighting key factors influencing the healthiness assessment.
+
+Return your answer in the following structured format:
+
+- **Initial Product:**
+  - **Healthiness Score:** [Numeric score between 1 and 10]
+  - **Rationale:** [Brief explanation for the score]
+
+- **Proposed Alternative:**
+  - **Healthiness Score:** [Numeric score between 1 and 10]
+  - **Rationale:** [Brief explanation for the score]
+
+--- DATA ---
+Initial Product Details:
+${formatSnackData(initialDetails)}
+
+Proposed Alternative Details:
+${formatSnackData(alternativeDetails)}
+`;
+
+    console.log("Sending comparison prompt to LLM:", prompt);
+
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${VITE_OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          "model": "meta-llama/llama-3.1-70b-instruct:free", // Or your preferred model
           "messages": [
             { "role": "user", "content": prompt }
           ]
@@ -62,34 +191,53 @@ Analysis and Alternatives:`;
       }
 
       const data = await response.json();
-      console.log("LLM API Success Response:", data);
+      console.log("LLM Comparison Success Response:", data);
 
       if (data.choices && data.choices.length > 0) {
-        setLlmAnalysis(data.choices[0].message.content);
+        setLlmComparison(data.choices[0].message.content);
+        setScanStage('compared'); // Comparison finished
       } else {
-        throw new Error("No analysis received from LLM.");
+        throw new Error("No comparison received from LLM.");
       }
 
     } catch (llmError) {
-      console.error("Failed to get LLM analysis:", llmError);
-      setError(`Failed to get analysis: ${llmError.message}`);
-      setLlmAnalysis(null);
+      console.error("Failed to get LLM comparison:", llmError);
+      setError(`Failed to get comparison: ${llmError.message}`);
+      setLlmComparison(null);
+      // Revert to a state where user can re-scan alternative or start over
+      setScanStage('initialScanned');
     } finally {
-      setIsAnalyzing(false);
+      setIsComparing(false);
     }
   };
 
-  const fetchProductDetails = async (barcode) => {
+
+  // Modified function to fetch details
+  const fetchProductDetails = async (barcode, stage) => {
     setIsLoading(true);
+    setCurrentLoadingSnack(stage);
     setError(null);
-    setProductDetails(null);
-    setLlmAnalysis(null);
-    console.log(`Fetching details for barcode: ${barcode}`);
+
+    // Clear relevant state based on the stage being fetched
+    if (stage === 'initial') {
+        setInitialSnackDetails(null);
+        setAlternativeSnackDetails(null);
+        setLlmInitialSuggestions(null); // Clear suggestions
+        setLlmComparison(null); // Clear comparison
+    } else { // stage === 'alternative'
+        setAlternativeSnackDetails(null);
+        setLlmComparison(null); // Clear comparison
+    }
+
+    console.log(`Fetching details for ${stage} snack, barcode: ${barcode}`);
     try {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
       );
       if (!response.ok) {
+          if (response.status === 404) {
+             throw new Error(`Product with barcode ${barcode} not found in Open Food Facts database.`);
+          }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
@@ -97,74 +245,122 @@ Analysis and Alternatives:`;
 
       if (data.status === 1 && data.product) {
         const product = data.product;
-        const details = {
-          name: product.product_name || "Name not found",
-          imageUrl: product.image_url || null,
-          nutriments: product.nutriments || {},
-          ingredients: product.ingredients_text || "Ingredients not listed",
-        };
-        setProductDetails(details);
-        await getLlmAnalysis(details);
+        const details = product;
+
+        if (stage === 'initial') {
+          setInitialSnackDetails(details);
+          // Instead of changing stage, trigger suggestions fetch
+          getLlmInitialSuggestions(details);
+        } else if (stage === 'alternative') {
+          setAlternativeSnackDetails(details);
+          // Comparison is triggered by useEffect watching alternativeSnackDetails
+          // No stage change needed here, useEffect handles it
+        }
       } else {
-        throw new Error(data.status_verbose || "Product not found");
+        throw new Error(data.status_verbose || "Product not found or invalid response");
       }
     } catch (fetchError) {
-      console.error("Failed to fetch product details:", fetchError);
-      setError(`Failed to fetch details: ${fetchError.message}`);
-      setProductDetails(null);
+      console.error(`Failed to fetch ${stage} product details:`, fetchError);
+      setError(`Failed to fetch ${stage} details: ${fetchError.message}`);
+      // Reset stage appropriately on fetch error
+      if (stage === 'initial') {
+          setScanStage('initial');
+      } else {
+          // If fetching alternative fails, go back to the state where initial suggestions are shown
+          setScanStage('initialScanned');
+      }
     } finally {
       setIsLoading(false);
+      setCurrentLoadingSnack(null);
     }
   };
 
+  // useEffect to trigger comparison (remains the same)
+  useEffect(() => {
+    if (initialSnackDetails && alternativeSnackDetails && scanStage !== 'comparing' && scanStage !== 'compared') {
+      getLlmComparison(initialSnackDetails, alternativeSnackDetails);
+    }
+  }, [initialSnackDetails, alternativeSnackDetails, scanStage]); // Added scanStage to dependencies
+
+
+  // handleScanSuccess remains the same
   const handleScanSuccess = (decodedText, decodedResult) => {
-    console.log("✅ Scanned barcode:", decodedText);
-    html5QrCodeRef.current
-      ?.stop()
-      .then(() => {
-        console.log("Scanner stopped after scan");
-        setScanning(false);
-        fetchProductDetails(decodedText);
-      })
-      .catch((err) => {
-        console.error("Error stopping scanner:", err);
-        setScanning(false);
-        fetchProductDetails(decodedText);
-      });
+    console.log(`✅ Scanned barcode (${scanStage}):`, decodedText);
+    stopScanner().then(() => {
+        // Fetch details for the *current* intended stage
+        if (scanStage === 'initial' || scanStage === 'suggesting') {
+            fetchProductDetails(decodedText, 'initial');
+        } else if (scanStage === 'alternative' || scanStage === 'initialScanned') {
+            // Allow scanning alternative only if initial scan/suggestion is done
+            fetchProductDetails(decodedText, 'alternative');
+        }
+    });
   };
 
+  // Cleanup useEffect remains the same
   useEffect(() => {
     const html5QrCode = html5QrCodeRef.current;
     return () => {
-      if (html5QrCode && typeof html5QrCode.stop === 'function' && html5QrCode.getState() === 2) {
-        html5QrCode.stop()
-          .then(() => console.log("Scanner stopped on component unmount"))
-          .catch(err => console.error("Error stopping scanner on unmount:", err));
-      }
+        stopScanner(); // Use the helper function for cleanup
     };
   }, []);
 
-  const startScanner = async () => {
+  // stopScanner remains the same
+  const stopScanner = async () => {
+      const html5QrCode = html5QrCodeRef.current;
+      if (html5QrCode && typeof html5QrCode.stop === 'function' && html5QrCode.getState() === 2 /* SCANNING */) {
+          try {
+              await html5QrCode.stop();
+              console.log("Scanner stopped successfully.");
+              setScanning(false);
+          } catch (err) {
+              console.error("Error stopping scanner:", err);
+              setScanning(false);
+          }
+      } else {
+         setScanning(false);
+      }
+  };
+
+
+  // Modified startScanner to set the correct stage *before* starting hardware
+  const startScanner = async (stageToScan) => {
+    await stopScanner();
+
+    // Set the intended stage *before* trying to start the scanner
+    setScanStage(stageToScan);
+
     setScanning(true);
     setError(null);
-    setProductDetails(null);
-    setLlmAnalysis(null);
+
+    // Clear relevant state when initiating a scan stage
+    if (stageToScan === 'initial') {
+        setInitialSnackDetails(null);
+        setAlternativeSnackDetails(null);
+        setLlmInitialSuggestions(null);
+        setLlmComparison(null);
+    } else if (stageToScan === 'alternative') {
+        // Only clear alternative details and comparison if starting alternative scan
+        setAlternativeSnackDetails(null);
+        setLlmComparison(null);
+    }
 
     const scannerElement = document.getElementById("scanner");
     if (!scannerElement) {
-      setError("Scanner element not found in the DOM.");
+      setError("Scanner UI element not found in the DOM.");
       setScanning(false);
       return;
     }
 
     let html5QrCode = html5QrCodeRef.current;
     if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("scanner", {
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true,
-            },
-        });
-        html5QrCodeRef.current = html5QrCode;
+      html5QrCode = new Html5Qrcode("scanner", {
+          experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true,
+          },
+          verbose: false
+      });
+      html5QrCodeRef.current = html5QrCode;
     }
 
     const config = {
@@ -174,138 +370,167 @@ Analysis and Alternatives:`;
     };
 
     try {
-      if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2) {
+       if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2) {
+            console.warn("Scanner was already running, attempting to stop before restarting.");
            await html5QrCode.stop();
-           console.log("Stopped existing scanner session before starting new one.");
-       }
+        }
 
       await html5QrCode.start(
         { facingMode: "environment" },
         config,
         handleScanSuccess,
-        (scanError) => { /* Optional ignore */ }
+        (scanError) => { /* Ignore */ }
       );
-      console.log("Scanner started successfully.");
+      console.log(`Scanner started for ${stageToScan} snack.`);
     } catch (err) {
-      setError(`Failed to start camera: ${err.message}. Check permissions or browser support.`);
-      console.error("Scanner init error:", err);
-      setScanning(false);
-       if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2) {
+        let errorMessage = `Failed to start camera: ${err.message}.`;
+        if (err.name === 'NotAllowedError') {
+            errorMessage += ' Please grant camera permission.';
+        } else if (err.name === 'NotFoundError') {
+             errorMessage += ' No suitable camera found or camera is busy.';
+        } else {
+             errorMessage += ' Check browser support or other issues.';
+        }
+        setError(errorMessage);
+        console.error("Scanner init error:", err);
+        setScanning(false);
+        // Revert to previous stable state on error
+        if (stageToScan === 'alternative') {
+            setScanStage('initialScanned');
+        } else {
+            setScanStage('initial');
+        }
+        // Attempt cleanup
+        if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2) {
             html5QrCode.stop().catch(e => console.error("Cleanup stop failed after start error", e));
-       }
+        }
     }
   };
 
+  // Function to format LLM response (simple preformatting)
   const formatLlmResponse = (text) => {
-    if (!text) return null;
-    return text.split('\\n').join('<br />');
+      if (!text) return null;
+      // Replace markdown-like bolding with <strong> tags
+      let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Replace both escaped (\n) and literal (\n) newlines with <br /> tags using a single regex
+      formattedText = formattedText.replace(/\\n|\n/g, '<br />');
+      return formattedText;
   };
 
-  const stopScanner = () => {
-    if (html5QrCodeRef.current && typeof html5QrCodeRef.current.stop === 'function') {
-      html5QrCodeRef.current.stop()
-        .then(() => {
-          console.log("Scanner stopped manually by user.");
-          setScanning(false);
-        })
-        .catch(err => {
-          console.error("Error stopping scanner manually:", err);
-          setError("Failed to stop scanner.");
-          setScanning(false);
-        });
-    } else {
-      console.log("Scanner instance not found or cannot be stopped.");
-      setScanning(false);
-    }
+  // SnackDisplay remains the same
+  const SnackDisplay = ({ snack, title }) => {
+      if (!snack) return null;
+      const { product_name, image_url, nutriments = {}, ingredients_text } = snack;
+      return (
+          <div style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '500px', margin: '1rem auto', textAlign: 'left', background: '#f9f9f9' }}>
+              <h3>{title}: {product_name || "Name not found"}</h3>
+              {image_url && (
+                  <img
+                      src={image_url}
+                      alt={product_name || 'Snack image'}
+                      style={{ maxWidth: "150px", height: "auto", marginBottom: "1rem", display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+                  />
+              )}
+              <p><strong>Calories:</strong> {nutriments['energy-kcal_100g'] !== undefined ? `${nutriments['energy-kcal_100g']} kcal / 100g` : 'N/A'}</p>
+              <p><strong>Sugars:</strong> {nutriments.sugars_100g !== undefined ? `${nutriments.sugars_100g} g / 100g` : 'N/A'}</p>
+              <p><strong>Fat:</strong> {nutriments.fat_100g !== undefined ? `${nutriments.fat_100g} g / 100g` : 'N/A'}</p>
+              <p><strong>Sodium:</strong> {nutriments.sodium_100g !== undefined ? `${(nutriments.sodium_100g * 1000).toFixed(0)} mg / 100g` : 'N/A'}</p>
+              <p><strong>Ingredients:</strong> {ingredients_text || "Ingredients not listed"}</p>
+          </div>
+      );
   };
+
+
+  // Function to reset the entire flow
+  const resetFlow = () => {
+      stopScanner();
+      setScanStage('initial');
+      setInitialSnackDetails(null);
+      setAlternativeSnackDetails(null);
+      setLlmInitialSuggestions(null);
+      setLlmComparison(null);
+      setError(null);
+      setIsLoading(false);
+      setIsSuggesting(false);
+      setIsComparing(false);
+      setCurrentLoadingSnack(null);
+  };
+
 
   return (
-    <div style={{ textAlign: "center", marginTop: "2rem" }}>
-      <ScanButton 
-        onClick={startScanner} 
-        isScanning={scanning} 
-        hasProductDetails={!!productDetails} 
-      />
+    <div style={{ textAlign: "center", marginTop: "2rem", paddingBottom: "3rem" }}>
 
-      {scanning && (
-        <button
-          onClick={stopScanner}
-          style={{
-            padding: "0.75rem 1.5rem",
-            backgroundColor: "#dc3545",
-            color: "#fff",
-            border: "1px solid #dc3545",
-            borderRadius: "999px",
-            fontSize: "1rem",
-            fontWeight: "500",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            marginBottom: "1rem",
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = "#c82333";
-            e.target.style.borderColor = "#bd2130";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = "#dc3545";
-            e.target.style.borderColor = "#dc3545";
-          }}
-        >
-          Stop Scan
+      {/* --- Control Buttons --- */}
+      {!scanning && scanStage === 'initial' && (
+        <button onClick={() => startScanner('initial')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem' }}>
+          Scan Initial Snack
         </button>
       )}
+      {/* Show Scan Alternative button only after initial suggestions are loaded */}
+      {!scanning && scanStage === 'initialScanned' && initialSnackDetails && (
+        <button onClick={() => startScanner('alternative')} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#4CAF50', color: 'white' }}>
+          Scan Healthier Alternative
+        </button>
+      )}
+       {/* Show Start Over button after comparison or if stuck */}
+       {!scanning && (scanStage === 'compared' || scanStage === 'initialScanned' || scanStage === 'alternative') && (
+         <button onClick={resetFlow} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', marginLeft: '1rem', fontSize: '1rem', backgroundColor: '#f44336', color: 'white' }}>
+            Start New Comparison
+         </button>
+       )}
 
+
+       {/* --- Scanner UI --- */}
        <div
          id="scanner"
          ref={scannerRef}
          style={{
-           width: "320px",
-           height: "320px",
+           width: "300px",
+           height: "300px",
            margin: "1rem auto",
-           border: scanning ? "2px solid lightgreen" : "2px dashed #ccc",
-           backgroundColor: "#f0f0f0",
+           border: scanning ? "3px solid lightgreen" : "2px dashed #ccc",
+           borderRadius: '8px',
+           backgroundColor: "#f8f8f8",
            display: scanning ? "block" : "none",
-           position: "relative"
+           position: "relative",
+           overflow: 'hidden'
          }}
        >
+         {scanning && <p style={{position: 'absolute', top: '5px', left: '5px', color: '#555', fontSize: '0.8em'}}>Scanning for {scanStage} snack...</p>}
        </div>
 
-      {isLoading && <p>Loading product details...</p>}
-      {error && !isAnalyzing && <p style={{ color: "red", marginTop: '1rem' }}>{error}</p>}
+      {/* --- Status Messages --- */}
+      {isLoading && <p>Loading details for {currentLoadingSnack} snack...</p>}
+      {isSuggesting && <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>Getting initial suggestions...</p>}
+      {isComparing && <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>Comparing snacks...</p>}
+      {error && <p style={{ color: "red", marginTop: '1rem', fontWeight: 'bold' }}>Error: {error}</p>}
 
-      {productDetails && !isLoading && (
-        <div style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '500px', margin: '1rem auto', textAlign: 'left' }}>
-          <h3>{productDetails.name}</h3>
-          {productDetails.imageUrl && (
-            <img
-              src={productDetails.imageUrl}
-              alt={productDetails.name}
-              style={{ maxWidth: "150px", height: "auto", marginBottom: "1rem", display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
-            />
-          )}
-          <p><strong>Calories:</strong> {productDetails.nutriments['energy-kcal_100g'] || 'N/A'} kcal / 100g</p>
-          <p><strong>Sugars:</strong> {productDetails.nutriments.sugars_100g || 'N/A'} g / 100g</p>
-          <p><strong>Fat:</strong> {productDetails.nutriments.fat_100g || 'N/A'} g / 100g</p>
-          <p><strong>Ingredients:</strong> {productDetails.ingredients}</p>
 
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
-            <h4>AI Analysis & Alternatives:</h4>
-            {isAnalyzing && <p>Analyzing...</p>}
-            {error && isAnalyzing && <p style={{ color: "orange", marginTop: '1rem' }}>{error}</p>}
+      {/* --- Initial Snack Display Area --- */}
+      <SnackDisplay snack={initialSnackDetails} title="Initial Snack" />
 
-            {llmAnalysis && !isAnalyzing && (
-              <p dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmAnalysis) }} />
-            )}
-             {!llmAnalysis && !isAnalyzing && !error && productDetails && (
-                 <p>Waiting for analysis...</p>
-             )}
+      {/* --- Initial Suggestions Area --- */}
+      {llmInitialSuggestions && !isSuggesting && (scanStage === 'initialScanned' || scanStage === 'alternative' || scanStage === 'comparing' || scanStage === 'compared') && (
+          <div style={{ marginTop: "1.5rem", padding: "1rem", border: "1px solid #eee", borderRadius: "8px", maxWidth: '700px', margin: '1.5rem auto', textAlign: 'left', backgroundColor: '#f0f8ff' }}>
+              <h4 style={{textAlign: 'center', marginBottom: '1rem'}}>Suggested Alternatives:</h4>
+              <div dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmInitialSuggestions) }} />
           </div>
+      )}
 
-           <button onClick={startScanner} style={{ padding: "0.5rem 1rem", marginTop: '1rem', display: 'block', marginLeft: 'auto', marginRight: 'auto' }}>
-             Scan Another Item
-           </button>
+      {/* --- Alternative Snack Display Area (only shown after alternative scan starts) --- */}
+      {(scanStage === 'alternative' || scanStage === 'comparing' || scanStage === 'compared') && (
+          <SnackDisplay snack={alternativeSnackDetails} title="Alternative Snack" />
+      )}
+
+
+      {/* --- LLM Comparison Result --- */}
+      {llmComparison && !isComparing && scanStage === 'compared' && (
+        <div style={{ marginTop: "2rem", padding: "1.5rem", border: "1px solid #ddd", borderRadius: "8px", maxWidth: '700px', margin: '2rem auto', textAlign: 'left', backgroundColor: '#fff' }}>
+          <h3 style={{textAlign: 'center', marginBottom: '1rem'}}>Comparison Result</h3>
+           <div dangerouslySetInnerHTML={{ __html: formatLlmResponse(llmComparison) }} />
         </div>
       )}
+
     </div>
   );
 }
