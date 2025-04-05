@@ -576,7 +576,7 @@ ${formatSnackData(alternativeDetails)}
        )}
        {/* Add Stop Scan button when scanning is active */}
        {scanning && (
-          <button onClick={stopScanner} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#ff9800', color: 'white' }}>
+          <button onClick={stopScanner} style={{ padding: "0.8rem 1.5rem", marginBottom: '1rem', fontSize: '1rem', backgroundColor: '#ffff', color: 'red' }}>
              Stop Scan
           </button>
         )}
