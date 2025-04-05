@@ -6,6 +6,13 @@
   color: white;
 }
 
+.points-display {
+  color: #2ecc71; /* Using a specific shade of green */
+  font-size: 1.4rem; /* Slightly larger font size */
+  font-weight: bold; /* Make it bold */
+  margin-bottom: 1rem; /* Add some space below */
+}
+
 .coming-soon-text {
   font-size: 1.5rem;
   color: #cccccc;
@@ -58,4 +65,48 @@
 .reward-item p {
   font-size: 0.9rem;
   color: #ccc;
+}
+
+/* Styles for the new reward elements */
+.reward-name {
+  font-weight: bold;
+  margin-bottom: 0.3rem; /* Space between name and points */
+  font-size: 1rem;
+  color: #ffffff; /* White color for name */
+}
+
+.reward-points {
+  font-size: 0.9rem;
+  color: #bdbdbd; /* Lighter grey for points */
+  margin-bottom: 0.8rem; /* Space between points and button */
+}
+
+.redeem-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: white;
+  background-color: #2ecc71; /* Green background for active button */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 90%; /* Make button take most of the card width */
+  margin-top: auto; /* Push button to the bottom if card height varies */
+}
+
+.redeem-button:hover:not(:disabled) {
+  background-color: #27ae60; /* Darker green on hover */
+}
+
+.redeem-button:disabled {
+  background-color: #757575; /* Grey background for disabled button */
+  color: #bdbdbd; /* Lighter grey text for disabled */
+  cursor: not-allowed;
+}
+
+/* Style for the entire disabled reward item */
+.reward-item.disabled {
+  opacity: 0.6; /* Make the whole card slightly transparent */
+  /* background-color: #424242; /* Optionally slightly darker background */
 } 
