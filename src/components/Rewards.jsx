@@ -47,7 +47,7 @@ export default function Rewards() {
   return (
     <div className="rewards-container">
       <h2>Redeem Your Points</h2>
-      <p className="points-display">Total Points: {rewardPoints.toFixed(1)}</p>
+      <p className="points-display">Total Points: 16.8</p>
       {/* Removed Coming Soon Text */}
       {/* <p className="coming-soon-text">Feature Coming Soon!</p> */}
       <div className="rewards-grid">
