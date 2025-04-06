@@ -3,17 +3,17 @@ import { AppContext } from '../context/AppContext';
 import './Rewards.css'; // We'll create this CSS file next
 
 // --- IMPORT IMAGES --- 
-// Ensure these files exist in src/components/images/
+// Import logos based on actual files found
 import appleLogo from './images/Apple-Logo.png'; // Placeholder/fallback
-// Removed unused imports for now
-// import amazonLogo from './images/amazon.png'; // Assumed filename
-// import starbucksLogo from './images/starbucks.png'; // Assumed filename
-// import movieLogo from './images/movie.png'; // Assumed filename
-// import visaLogo from './images/visa.png'; // Assumed filename
-// import fitnessLogo from './images/fitness.png'; // Assumed filename
-// import earbudsLogo from './images/earbuds.png'; // Assumed filename
-// import bottleLogo from './images/bottle.png'; // Assumed filename
-
+import amazonLogo from './images/amazon-logo.png'; // Correct import
+import appstoreLogo from './images/Appstore.png'; // Import for fitness app
+import primeLogo from './images/amazon-prime.png'; 
+import adidasLogo from './images/adidas.png'; // Renamed
+// import appstore from './images/Appstore.png'; // Removed duplicate
+import dellLogo from './images/Dell.png'; // Renamed
+import playstoreLogo from './images/Playstore.png'; // Renamed
+import pumaLogo from './images/Puma.png'; // Renamed
+import swiggyLogo from './images/Swiggy.png'; // Renamed
 // Placeholder logos (replace with actual image URLs or components later)
 // We don't need this array anymore if we use the same logo for all cards
 // const placeholderLogos = [
@@ -21,16 +21,16 @@ import appleLogo from './images/Apple-Logo.png'; // Placeholder/fallback
 //   'Logo 7', 'Logo 8', 'Logo 9', 'Logo 10', 'Logo 11', 'Logo 12',
 // ];
 
-// Define sample reward data with specific logos - REVERTED to appleLogo
+// Define sample reward data using available logos - UPDATED WITH NEW LOGOS
 const rewardsData = [
-  { id: 1, name: '$5 Amazon Gift Card', points: 50, logo: appleLogo },
-  { id: 2, name: '$10 Starbucks Card', points: 100, logo: appleLogo },
-  { id: 3, name: 'Movie Ticket Voucher', points: 120, logo: appleLogo },
-  { id: 4, name: '$25 Visa Gift Card', points: 250, logo: appleLogo },
-  { id: 5, name: 'Premium Fitness App Subscription (1 Month)', points: 80, logo: appleLogo },
-  { id: 6, name: '$50 Amazon Gift Card', points: 500, logo: appleLogo },
-  { id: 7, name: 'Wireless Earbuds', points: 1000, logo: appleLogo },
-  { id: 8, name: 'Smart Water Bottle', points: 750, logo: appleLogo },
+  { id: 1, name: '$5 Amazon Gift Card', points: 50, logo: amazonLogo }, 
+  { id: 9, name: 'Adidas Voucher', points: 300, logo: adidasLogo }, // New reward
+  { id: 10, name: '$20 Dell Discount', points: 200, logo: dellLogo }, // New reward
+  { id: 11, name: 'Puma Store Credit', points: 250, logo: pumaLogo }, // New reward
+  { id: 5, name: 'Premium Fitness App Subscription (1 Month)', points: 80, logo: appstoreLogo }, // Kept Appstore 
+  { id: 6, name: '$50 Amazon Prime Credit', points: 500, logo: primeLogo }, // Using Prime Logo
+  { id: 12, name: 'Swiggy Food Coupon', points: 60, logo: swiggyLogo }, // New reward
+  { id: 13, name: '$10 Google Play Credit', points: 100, logo: playstoreLogo }, // New reward 
 ];
 
 // Let's assume we want 12 cards for now - REMOVED, using rewardsData length now
@@ -47,7 +47,7 @@ export default function Rewards() {
   return (
     <div className="rewards-container">
       <h2>Redeem Your Points</h2>
-      <p className="points-display">Total Points: 8.6</p>
+      <p className="points-display">Total Points: {rewardPoints.toFixed(1)}</p>
       {/* Removed Coming Soon Text */}
       {/* <p className="coming-soon-text">Feature Coming Soon!</p> */}
       <div className="rewards-grid">
